@@ -2,6 +2,10 @@ package imap
 
 import (
 	"testing"
+	"net/mail"
+	"net/textproto"
+	"bytes"
+	"bufio"
 )
 
 func TestResponse(t *testing.T) {
@@ -47,5 +51,163 @@ func TestResponse(t *testing.T) {
 	}
 	if replys[0].Content()[:4] != "MIME" {
 		t.Errorf("resp.Reply[0].InParenthesis should start with MIME, got: %s", replys[0].Content())
+	}
+}
+
+func TestSelectPart(t *testing.T) {
+	{
+		hs := `MIME-Version: 1.0
+Received: by 10.76.101.172 with HTTP; Tue, 26 Jun 2012 23:11:28 -0700 (PDT)
+Date: Wed, 27 Jun 2012 14:11:28 +0800
+Delivered-To: googollee@gmail.com
+Message-ID: <CAOf82vP-CNcxcNKvRSHc_rGrNrEoTq7DLOEckuD1g-MN7LqtVg@mail.gmail.com>
+Subject: test
+From: Googol Lee <googollee@gmail.com>
+To: =?UTF-8?B?R29vZ29sIExlZSAtIEdvb2dsZee6r+eIt+S7rO+8gemTgeihgOecn+axieWtkO+8ge+8gQ==?= <googollee@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: base64`
+		bd := `YTAwNyBPSyBTdWNjZXNzCgopCgotLQrmlrDnmoTnkIborrrku47lsJHmlbDkurrnmoTkuLvlvKDl
+iLDkuIDnu5/lpKnkuIvvvIzlubbkuI3mmK/lm6DkuLrov5nkuKrnkIborrror7TmnI3kuobliKvk
+urrmipvlvIPml6fop4LngrnvvIzogIzmmK/lm6DkuLrkuIDku6PkurrnmoTpgJ3ljrvjgIIK`
+		reader := textproto.NewReader(bufio.NewReader(bytes.NewBufferString(hs)))
+		hr, _ := reader.ReadMIMEHeader()
+		msg := &mail.Message{
+			Header: mail.Header(hr),
+			Body:   bytes.NewBufferString(bd),
+		}
+
+		expect := "a007 OK Success\n\n)\n\n--\n新的理论从少数人的主张到一统天下，并不是因为这个理论说服了别人抛弃旧观点，而是因为一代人的逝去。\n"
+		content, mediatype, charset, _ := GetBody(msg, "text/plain")
+		if mediatype != "text/plain" {
+			t.Errorf("mediatype expect: text/plain, got: %s", mediatype)
+		}
+		if charset != "UTF-8" {
+			t.Errorf("charset expect: UTF-8, got: %s", charset)
+		}
+		if content != expect {
+			t.Errorf("content expect:\n%s\ngot:\n%s", expect, content)
+		}
+	}
+
+	{
+		hs := `MIME-Version: 1.0
+Received: by 10.76.101.172 with HTTP; Tue, 26 Jun 2012 23:11:28 -0700 (PDT)
+Date: Wed, 27 Jun 2012 14:11:28 +0800
+Delivered-To: googollee@gmail.com
+Message-ID: <CAOf82vP-CNcxcNKvRSHc_rGrNrEoTq7DLOEckuD1g-MN7LqtVg@mail.gmail.com>
+Subject: test
+From: Googol Lee <googollee@gmail.com>
+To: =?UTF-8?B?R29vZ29sIExlZSAtIEdvb2dsZee6r+eIt+S7rO+8gemTgeihgOecn+axieWtkO+8ge+8gQ==?= <googollee@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable`
+		bd := "If you believe that truth=3Dbeauty, then surely =\r\nmathematics is the most beautiful branch of philosophy."
+		reader := textproto.NewReader(bufio.NewReader(bytes.NewBufferString(hs)))
+		hr, _ := reader.ReadMIMEHeader()
+		msg := &mail.Message{
+			Header: mail.Header(hr),
+			Body:   bytes.NewBufferString(bd),
+		}
+
+		expect := "If you believe that truth=beauty, then surely mathematics is the most beautiful branch of philosophy."
+		content, mediatype, charset, _ := GetBody(msg, "text/plain")
+		if mediatype != "text/plain" {
+			t.Errorf("mediatype expect: text/plain, got: %s", mediatype)
+		}
+		if charset != "UTF-8" {
+			t.Errorf("charset expect: UTF-8, got: %s", charset)
+		}
+		if content != expect {
+			t.Errorf("content expect:\n%s\ngot:\n%s", expect, content)
+		}
+	}
+
+	{
+		hs := `MIME-Version: 1.0
+Received: by 10.76.101.172 with HTTP; Tue, 26 Jun 2012 23:11:28 -0700 (PDT)
+Date: Wed, 27 Jun 2012 14:11:28 +0800
+Delivered-To: googollee@gmail.com
+Message-ID: <CAOf82vP-CNcxcNKvRSHc_rGrNrEoTq7DLOEckuD1g-MN7LqtVg@mail.gmail.com>
+Subject: test
+From: Googol Lee <googollee@gmail.com>
+To: =?UTF-8?B?R29vZ29sIExlZSAtIEdvb2dsZee6r+eIt+S7rO+8gemTgeihgOecn+axieWtkO+8ge+8gQ==?= <googollee@gmail.com>
+Content-Type: multipart/alternative; boundary=14dae9d67df4436caa04c39ae8b8`
+		bd := `--14dae9d67df4436caa04c39ae8b8
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: base64
+
+YWJjYWJjCgotLSAK5paw55qE55CG6K665LuO5bCR5pWw5Lq655qE5Li75byg5Yiw5LiA57uf5aSp
+5LiL77yM5bm25LiN5piv5Zug5Li66L+Z5Liq55CG6K666K+05pyN5LqG5Yir5Lq65oqb5byD5pen
+6KeC54K577yM6ICM5piv5Zug5Li65LiA5Luj5Lq655qE6YCd5Y6744CCCg==
+--14dae9d67df4436caa04c39ae8b8
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: base64
+
+YWJjYWJjPGJyPjxicj4tLSA8YnI+5paw55qE55CG6K665LuO5bCR5pWw5Lq655qE5Li75byg5Yiw
+5LiA57uf5aSp5LiL77yM5bm25LiN5piv5Zug5Li66L+Z5Liq55CG6K666K+05pyN5LqG5Yir5Lq6
+5oqb5byD5pen6KeC54K577yM6ICM5piv5Zug5Li65LiA5Luj5Lq655qE6YCd5Y6744CCPGJyPgo=
+--14dae9d67df4436caa04c39ae8b8--`
+		reader := textproto.NewReader(bufio.NewReader(bytes.NewBufferString(hs)))
+		hr, _ := reader.ReadMIMEHeader()
+		msg := &mail.Message{
+			Header: mail.Header(hr),
+			Body:   bytes.NewBufferString(bd),
+		}
+
+		expect := "abcabc\n\n-- \n新的理论从少数人的主张到一统天下，并不是因为这个理论说服了别人抛弃旧观点，而是因为一代人的逝去。\n"
+		content, mediatype, charset, _ := GetBody(msg, "text/plain")
+		if mediatype != "text/plain" {
+			t.Errorf("mediatype expect: text/plain, got: %s", mediatype)
+		}
+		if charset != "UTF-8" {
+			t.Errorf("charset expect: UTF-8, got: %s", charset)
+		}
+		if content != expect {
+			t.Errorf("content expect:\n%s\ngot:\n%s", expect, content)
+		}
+	}
+
+	{
+		hs := `MIME-Version: 1.0
+Received: by 10.76.101.172 with HTTP; Tue, 26 Jun 2012 23:11:28 -0700 (PDT)
+Date: Wed, 27 Jun 2012 14:11:28 +0800
+Delivered-To: googollee@gmail.com
+Message-ID: <CAOf82vP-CNcxcNKvRSHc_rGrNrEoTq7DLOEckuD1g-MN7LqtVg@mail.gmail.com>
+Subject: test
+From: Googol Lee <googollee@gmail.com>
+To: =?UTF-8?B?R29vZ29sIExlZSAtIEdvb2dsZee6r+eIt+S7rO+8gemTgeihgOecn+axieWtkO+8ge+8gQ==?= <googollee@gmail.com>
+Content-Type: multipart/alternative; boundary=14dae9d67df4436caa04c39ae8b8`
+		bd := `--14dae9d67df4436caa04c39ae8b8
+Content-Type: text/json; charset=UTF-8
+Content-Transfer-Encoding: base64
+
+YWJjYWJjCgotLSAK5paw55qE55CG6K665LuO5bCR5pWw5Lq655qE5Li75byg5Yiw5LiA57uf5aSp
+5LiL77yM5bm25LiN5piv5Zug5Li66L+Z5Liq55CG6K666K+05pyN5LqG5Yir5Lq65oqb5byD5pen
+6KeC54K577yM6ICM5piv5Zug5Li65LiA5Luj5Lq655qE6YCd5Y6744CCCg==
+--14dae9d67df4436caa04c39ae8b8
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: base64
+
+YWJjYWJjPGJyPjxicj4tLSA8YnI+5paw55qE55CG6K665LuO5bCR5pWw5Lq655qE5Li75byg5Yiw
+5LiA57uf5aSp5LiL77yM5bm25LiN5piv5Zug5Li66L+Z5Liq55CG6K666K+05pyN5LqG5Yir5Lq6
+5oqb5byD5pen6KeC54K577yM6ICM5piv5Zug5Li65LiA5Luj5Lq655qE6YCd5Y6744CCPGJyPgo=
+--14dae9d67df4436caa04c39ae8b8--`
+		reader := textproto.NewReader(bufio.NewReader(bytes.NewBufferString(hs)))
+		hr, _ := reader.ReadMIMEHeader()
+		msg := &mail.Message{
+			Header: mail.Header(hr),
+			Body:   bytes.NewBufferString(bd),
+		}
+
+		expect := "abcabc\n\n-- \n新的理论从少数人的主张到一统天下，并不是因为这个理论说服了别人抛弃旧观点，而是因为一代人的逝去。\n"
+		content, mediatype, charset, _ := GetBody(msg, "text/plain")
+		if mediatype != "text/json" {
+			t.Errorf("mediatype expect: text/plain, got: %s", mediatype)
+		}
+		if charset != "UTF-8" {
+			t.Errorf("charset expect: UTF-8, got: %s", charset)
+		}
+		if content != expect {
+			t.Errorf("content expect:\n%s\ngot:\n%s", expect, content)
+		}
 	}
 }
