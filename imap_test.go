@@ -54,6 +54,75 @@ func TestResponse(t *testing.T) {
 	}
 }
 
+func TestParseAddress(t *testing.T) {
+	{
+		addrs, _ := ParseAddress("=?GB2312?B?1arSqsrVvP7Iyw==?= <pongba@googlegroups.com>")
+		if len(addrs) != 1 {
+			t.Errorf("expect: 1, got: %d", len(addrs))
+		}
+		if addrs[0].Name != "摘要收件人" {
+			t.Errorf("expect: 摘要收件人, got: %s", addrs[0].Name)
+		}
+		if addrs[0].Address != "pongba@googlegroups.com" {
+			t.Errorf("expect: pongba@googlegroups.com, got: %s", addrs[0].Address)
+		}
+	}
+
+	{
+		addrs, _ := ParseAddress("pongba@googlegroups.com")
+		if len(addrs) != 1 {
+			t.Errorf("expect: 1, got: %d", len(addrs))
+		}
+		if addrs[0].Name != "" {
+			t.Errorf("expect: empty string, got: %s", addrs[0].Name)
+		}
+		if addrs[0].Address != "pongba@googlegroups.com" {
+			t.Errorf("expect: pongba@googlegroups.com, got: %s", addrs[0].Address)
+		}
+	}
+
+	{
+		addrs, _ := ParseAddress("Pongba <pongba@googlegroups.com>")
+		if len(addrs) != 1 {
+			t.Errorf("expect: 1, got: %d", len(addrs))
+		}
+		if addrs[0].Name != "Pongba" {
+			t.Errorf("expect: Pongba, got: %s", addrs[0].Name)
+		}
+		if addrs[0].Address != "pongba@googlegroups.com" {
+			t.Errorf("expect: pongba@googlegroups.com, got: %s", addrs[0].Address)
+		}
+	}
+
+	{
+		addrs, _ := ParseAddress("\"=?ANSI_X3.4-1968?Q?Googol_=7C_=3F=3F=3F_=3F=3F_=3F=3F=3F?=\" <googollee@gmail.com>")
+		if len(addrs) != 1 {
+			t.Errorf("expect: 1, got: %d", len(addrs))
+		}
+		t.Error(addrs[0].Name)
+		t.Error(addrs[0].Address)
+	}
+
+	{
+		addrs, _ := ParseAddress("Pongba <pongba@googlegroups.com>, =?GB2312?B?1arSqsrVvP7Iyw==?= <pongba@googlegroups.com>")
+		if len(addrs) != 2 {
+			t.Errorf("expect: 1, got: %d", len(addrs))
+		}
+		if addrs[0].Name != "Pongba" {
+			t.Errorf("expect: Pongba, got: %s", addrs[0].Name)
+		}
+		if addrs[0].Address != "pongba@googlegroups.com" {
+			t.Errorf("expect: pongba@googlegroups.com, got: %s", addrs[0].Address)
+		}
+		if addrs[1].Name != "摘要收件人" {
+			t.Errorf("expect: 摘要收件人, got: %s", addrs[1].Name)
+		}
+		if addrs[1].Address != "pongba@googlegroups.com" {
+			t.Errorf("expect: pongba@googlegroups.com, got: %s", addrs[1].Address)
+		}
+	}
+}
+
 func TestSelectPart(t *testing.T) {
 	{
 		hs := `MIME-Version: 1.0

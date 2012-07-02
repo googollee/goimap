@@ -9,19 +9,21 @@ import (
 	"errors"
 	"net/textproto"
 	"net/mail"
+	"github.com/googollee/go-encoding-ex"
+	"github.com/sloonz/go-iconv"
 )
 
 const (
 	RFC822Header = "rfc822.header"
-	RFC822Text = "rfc822.text"
-	Seen = "\\Seen"
-	Inbox = "INBOX"
+	RFC822Text   = "rfc822.text"
+	Seen         = "\\Seen"
+	Inbox        = "INBOX"
 )
 
 type IMAPClient struct {
-	conn *tls.Conn
+	conn  *tls.Conn
 	count int
-	buf []byte
+	buf   []byte
 }
 
 func NewClient(addr string) (*IMAPClient, error) {
@@ -47,7 +49,7 @@ REPLY:
 	}
 	return &IMAPClient{
 		conn: conn,
-		buf: buf,
+		buf:  buf,
 	}, nil
 }
 
@@ -162,6 +164,42 @@ func (c *IMAPClient) GetMessage(id string) (*mail.Message, error) {
 
 	return &mail.Message{
 		Header: mail.Header(header),
-		Body: bytes.NewBuffer(bodyResp.Replys()[0].content),
+		Body:   bytes.NewBuffer(bodyResp.Replys()[0].content),
 	}, nil
+}
+
+func ParseAddress(str string) ([]*mail.Address, error) {
+	strs := strings.Split(str, ",")
+	ret := make([]*mail.Address, len(strs), len(strs))
+	for i, s := range strs {
+		if s[len(s)-1] == '>' {
+			split := strings.LastIndex(s, "<")
+			name := strings.Trim(s[:split], "\" ")
+			addr := s[split:]
+			if name[0] == '=' {
+				data, charset, err := encodingex.DecodeEncodedWord(name)
+				if err != nil {
+					return nil, fmt.Errorf("address %d invalid: %s", i, err)
+				}
+				data, err = iconv.Conv(data, "UTF-8", charset)
+				if err != nil {
+					return nil, fmt.Errorf("address %d convert charset error: %s", i, err)
+				}
+				ret[i] = &mail.Address{
+					Name:    data,
+					Address: strings.Trim(addr, "<>"),
+				}
+			} else {
+				ret[i] = &mail.Address{
+					Name:    strings.Trim(name, "\""),
+					Address: strings.Trim(addr, "<>"),
+				}
+			}
+		} else {
+			ret[i] = &mail.Address{
+				Address: s,
+			}
+		}
+	}
+	return ret, nil
 }

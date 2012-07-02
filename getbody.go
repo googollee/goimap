@@ -26,7 +26,14 @@ Select:
 		err = nil
 		switch mediatype {
 		case "multipart/alternative":
+			fallthrough
+		case "multipart/mixed":
+			fallthrough
+		case "multipart/related":
 			msg, err = selectMultiPart(msg, typeparams["boundary"], preferType)
+			if err != nil {
+				break Select
+			}
 		default:
 			break Select
 		}
@@ -43,7 +50,7 @@ Select:
 	case "quoted-printable":
 		reader = encodingex.NewQuotedPrintableDecoder(msg.Body)
 	default:
-		return "", "", "", fmt.Errorf("doesn't supported encoding: %s", encoding)
+		reader = msg.Body
 	}
 
 	body, err := ioutil.ReadAll(reader)
@@ -78,6 +85,9 @@ func selectMultiPart(msg *mail.Message, boundary, preferType string) (*mail.Mess
 	}
 	types := strings.Split(preferType, "/")
 	if part, ok := parts[types[0]]; ok {
+		return part, nil
+	}
+	if part, ok := parts["multipart"]; ok {
 		return part, nil
 	}
 	return nil, fmt.Errorf("No prefered part")
