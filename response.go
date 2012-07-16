@@ -2,21 +2,22 @@ package imap
 
 import (
 	"errors"
-	"strings"
+	"fmt"
 	"strconv"
+	"strings"
 )
 
 type reply struct {
-	origin []byte
-	type_ []byte
-	length []byte
+	origin  []byte
+	type_   []byte
+	length  []byte
 	content []byte
 }
 
 func newReply() (ret reply) {
 	return reply{
-		origin: make([]byte, 0, 0),
-		type_: make([]byte, 0, 0),
+		origin:  make([]byte, 0, 0),
+		type_:   make([]byte, 0, 0),
 		content: make([]byte, 0, 0),
 	}
 }
@@ -54,26 +55,28 @@ const (
 )
 
 type Response struct {
-	id string
+	id     string
 	status string
-	err error
+	err    error
 	replys []reply
 
-	buf []byte
-	feedStatus feedStatus
+	buf              []byte
+	feedStatus       feedStatus
 	parenthesisCount int
-	reply reply
+	reply            reply
 }
 
 func NewResponse() *Response {
 	return &Response{
-		buf: make([]byte, 0, 0),
-		feedStatus: feedInit,
+		buf:              make([]byte, 0, 0),
+		feedStatus:       feedInit,
 		parenthesisCount: 0,
 	}
 }
 
 func (r *Response) Feed(input []byte) (bool, error) {
+	fmt.Println(string(input))
+	fmt.Println(r.feedStatus)
 	for _, i := range input {
 		switch r.feedStatus {
 		case feedInit:
@@ -101,6 +104,9 @@ func (r *Response) Feed(input []byte) (bool, error) {
 			}
 		case feedReplyType:
 			r.reply.origin = append(r.reply.origin, i)
+			if i == byte(')') {
+				r.feedStatus = feedReply
+			}
 			if i == byte(' ') && len(r.reply.type_) > 0 {
 				r.feedStatus = feedReplyLength
 			}
@@ -109,7 +115,7 @@ func (r *Response) Feed(input []byte) (bool, error) {
 			}
 		case feedReplyLength:
 			r.reply.origin = append(r.reply.origin, i)
-			if i == byte('\n'){
+			if i == byte('\n') {
 				r.feedStatus = feedReplyContent
 			}
 			if byte('0') <= i && i <= byte('9') {

@@ -1,11 +1,11 @@
 package imap
 
 import (
-	"testing"
+	"bufio"
+	"bytes"
 	"net/mail"
 	"net/textproto"
-	"bytes"
-	"bufio"
+	"testing"
 )
 
 func TestResponse(t *testing.T) {
@@ -14,19 +14,24 @@ func TestResponse(t *testing.T) {
 	line3 := "Date: Wed, 27 Jun 2012 14:11:28 +0800\r\nDelivered-To: googollee@gmail.com\r\nMessage-ID: "
 	line4 := "<CAOf82vP-CNcxcNKvRSHc_rGrNrEoTq7DLOEckuD1g-MN7LqtVg@mail.gmail.com>\r\nSubject: test\r\nFrom: Googol Lee <googollee@gmail.com>\r\n"
 	line5 := "To: =?UTF-8?B?R29vZ29sIExlZSAtIEdvb2dsZee6r+eIt+S7rO+8gemTgeihgOecn+axieWtkO+8ge+8gQ==?=\r\n <googollee@gmail.com>"
-	line6 := "\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n)\r\n"
+	line6 := "\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n"
+	linea := "FLAG (\\Seen))\r\n"
 	line7 := "a007 OK Success\r\n"
 	line8 := "fdafas"
 
-	lines := []string{line1, line2, line3, line4, line5, line6, line7, line8}
+	lines := []string{line1, line2, line3, line4, line5, line6, linea, line7, line8}
 	resp := NewResponse()
+	isFinished := false
 	for _, line := range lines {
-		isFinished, _ := resp.Feed([]byte(line))
+		isFinished, _ = resp.Feed([]byte(line))
 		if isFinished {
 			break
 		}
 	}
 
+	if !isFinished {
+		t.Errorf("should finished")
+	}
 	if resp.Id() != "a007" {
 		t.Errorf("resp.Id should a007, got: %s", resp.Id())
 	}
@@ -43,7 +48,7 @@ func TestResponse(t *testing.T) {
 	if replys[0].Origin()[:4] != "6955" {
 		t.Errorf("resp.Reply[0].Origin should start with 6909, got: %s", replys[0].Origin())
 	}
-	if replys[0].Type() != "RFC822.HEADER" {
+	if replys[0].Type() != "RFC822.HEADER\\Seen" {
 		t.Errorf("resp.Reply[0].Type should be RFC822.HEADER, got: %s", replys[0].Type())
 	}
 	if len(replys[0].Content()) != 499 {
