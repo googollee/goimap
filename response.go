@@ -2,7 +2,6 @@ package imap
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -75,8 +74,6 @@ func NewResponse() *Response {
 }
 
 func (r *Response) Feed(input []byte) (bool, error) {
-	fmt.Println(string(input))
-	fmt.Println(r.feedStatus)
 	for _, i := range input {
 		switch r.feedStatus {
 		case feedInit:
@@ -103,16 +100,17 @@ func (r *Response) Feed(input []byte) (bool, error) {
 				r.reply.origin = append(r.reply.origin, i)
 			}
 		case feedReplyType:
-			r.reply.origin = append(r.reply.origin, i)
-			if i == byte(')') {
+			switch i {
+			case byte(')'):
 				r.feedStatus = feedReply
-			}
-			if i == byte(' ') && len(r.reply.type_) > 0 {
-				r.feedStatus = feedReplyLength
-			}
-			if i != byte(' ') {
+			case byte(' '):
+				if len(r.reply.type_) > 0 {
+					r.feedStatus = feedReplyLength
+				}
+			default:
 				r.reply.type_ = append(r.reply.type_, i)
 			}
+			r.reply.origin = append(r.reply.origin, i)
 		case feedReplyLength:
 			r.reply.origin = append(r.reply.origin, i)
 			if i == byte('\n') {

@@ -49,7 +49,7 @@ func TestResponse(t *testing.T) {
 		t.Errorf("resp.Reply[0].Origin should start with 6909, got: %s", replys[0].Origin())
 	}
 	if replys[0].Type() != "RFC822.HEADER\\Seen" {
-		t.Errorf("resp.Reply[0].Type should be RFC822.HEADER, got: %s", replys[0].Type())
+		t.Errorf("resp.Reply[0].Type should be RFC822.HEADER\\Seen, got: %s", replys[0].Type())
 	}
 	if len(replys[0].Content()) != 499 {
 		t.Errorf("resp.Reply[0].Content length should be 499, got: %d", len(replys[0].Content()))
