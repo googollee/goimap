@@ -100,15 +100,6 @@ func TestParseAddress(t *testing.T) {
 	}
 
 	{
-		addrs, _ := ParseAddress("\"=?ANSI_X3.4-1968?Q?Googol_=7C_=3F=3F=3F_=3F=3F_=3F=3F=3F?=\" <googollee@gmail.com>")
-		if len(addrs) != 1 {
-			t.Errorf("expect: 1, got: %d", len(addrs))
-		}
-		t.Error(addrs[0].Name)
-		t.Error(addrs[0].Address)
-	}
-
-	{
 		addrs, _ := ParseAddress("Pongba <pongba@googlegroups.com>, =?GB2312?B?1arSqsrVvP7Iyw==?= <pongba@googlegroups.com>")
 		if len(addrs) != 2 {
 			t.Errorf("expect: 1, got: %d", len(addrs))

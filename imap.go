@@ -1,22 +1,23 @@
 package imap
 
 import (
-	"crypto/tls"
-	"fmt"
-	"strings"
 	"bufio"
 	"bytes"
+	"crypto/tls"
 	"errors"
-	"net/textproto"
-	"net/mail"
+	"fmt"
 	"github.com/googollee/go-encoding-ex"
 	"github.com/sloonz/go-iconv"
+	"net/mail"
+	"net/textproto"
+	"strings"
 )
 
 const (
 	RFC822Header = "rfc822.header"
 	RFC822Text   = "rfc822.text"
 	Seen         = "\\Seen"
+	Deleted      = "\\Deleted"
 	Inbox        = "INBOX"
 )
 
