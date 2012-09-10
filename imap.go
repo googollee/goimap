@@ -170,7 +170,21 @@ func (c *IMAPClient) GetMessage(id string) (*mail.Message, error) {
 }
 
 func ParseAddress(str string) ([]*mail.Address, error) {
-	strs := strings.Split(str, ",")
+	inQuote := false
+	lastStart := 0
+	strs := make([]string, 0, 0)
+	for i, c := range str {
+		switch c {
+		case '"':
+			inQuote = !inQuote
+		case ',':
+			if !inQuote {
+				strs = append(strs, str[lastStart:i])
+				lastStart = i + 1
+			}
+		}
+	}
+	strs = append(strs, str[lastStart:len(str)])
 	ret := make([]*mail.Address, len(strs), len(strs))
 	for i, s := range strs {
 		if s[len(s)-1] == '>' {
