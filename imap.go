@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/googollee/go-encoding-ex"
-	"github.com/sloonz/go-iconv"
 	"net/mail"
 	"net/textproto"
 	"strings"
@@ -196,7 +195,7 @@ func ParseAddress(str string) ([]*mail.Address, error) {
 				if err != nil {
 					return nil, fmt.Errorf("address %d invalid: %s", i, err)
 				}
-				data, err = iconv.Conv(data, "UTF-8", charset)
+				data, err = encodingex.Conv(data, "UTF-8", charset)
 				if err != nil {
 					return nil, fmt.Errorf("address %d convert charset error: %s", i, err)
 				}
