@@ -18,6 +18,7 @@ Usage
         "fmt"
         "io/ioutil"
         "imap"
+        "net"
     )
 
     func get1st(a, b interface{}) interface{} {
@@ -25,18 +26,19 @@ Usage
     }
 
     func main() {
-        conn, _ := imap.NewClient("imap.gmail.com:993")
-        defer conn.Close()
+        conn, _ := net.Dial("tcp", "imap.gmail.com:993")
+        client, _ := imap.NewClient(conn, "imap.gmail.com")
+        defer client.Close()
 
-        _ = conn.Login("mail@gmail.com", "password")
-        conn.Select(imap.Inbox)
-        ids, _ := conn.Search("unseen")
+        _ = client.Login("mail@gmail.com", "password")
+        client.Select(imap.Inbox)
+        ids, _ := client.Search("unseen")
         fmt.Println(ids)
 
         for _, id := range ids {
-            conn.StoreFlag(id, imap.Seen)
+            client.StoreFlag(id, imap.Seen)
 
-            msg, _ := conn.GetMessage(id)
+            msg, _ := client.GetMessage(id)
 
             fmt.Println("To:", get1st(msg.Header.AddressList("To")))
             fmt.Println("From:", get1st(msg.Header.AddressList("From")))
@@ -47,5 +49,5 @@ Usage
             body, _ := ioutil.ReadAll(msg.Body)
             fmt.Println("body:\n", string(body))
         }
-        conn.Logout()
+        client.Logout()
     }
