@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/googollee/go-encoding-ex"
+	"net"
 	"net/mail"
 	"net/textproto"
 	"strings"
@@ -26,15 +27,15 @@ type IMAPClient struct {
 	buf   []byte
 }
 
-func NewClient(addr string) (*IMAPClient, error) {
-	buf := make([]byte, 1024)
-	conn, err := tls.Dial("tcp", addr, nil)
-	if err != nil {
-		return nil, err
+func NewClient(conn net.Conn, hostname string) (*IMAPClient, error) {
+	config := tls.Config{
+		ServerName: hostname,
 	}
+	c := tls.Client(conn, &config)
+	buf := make([]byte, 1024)
 REPLY:
 	for {
-		n, err := conn.Read(buf)
+		n, err := c.Read(buf)
 		if err != nil {
 			return nil, err
 		}
@@ -48,7 +49,7 @@ REPLY:
 		}
 	}
 	return &IMAPClient{
-		conn: conn,
+		conn: c,
 		buf:  buf,
 	}, nil
 }
